@@ -1,25 +1,71 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
+import { supabase } from "./supabaseClient";
 import AppelContact from "./AppelContact";
 import PortefeuilleAgent from "./PortefeuilleAgent";
 
 export default function AgentHome({ agentId }: { agentId: string }) {
   const [onglet, setOnglet] = useState<"global" | "mes_contacts">("global");
 
-  return (
-    <div style={{ fontFamily: "Arial, sans-serif", padding: 20 }}>
-      <h1>👤 Espace Agent</h1>
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert("Erreur lors de la déconnexion : " + error.message);
+    }
+  };
 
-      <div style={{ marginBottom: 20 }}>
+  return (
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        padding: "20px",
+        maxWidth: "1000px",
+        margin: "0 auto",
+      }}
+    >
+      <header
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: 30,
+        }}
+      >
+        <h1 style={{ fontSize: "1.8rem", marginBottom: 10 }}>👤 Espace Agent</h1>
+        <button
+          onClick={handleLogout}
+          style={{
+            backgroundColor: "#f44336",
+            color: "#fff",
+            border: "none",
+            padding: "10px 16px",
+            borderRadius: 5,
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          🔒 Se déconnecter
+        </button>
+      </header>
+
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          gap: "10px",
+          marginBottom: 30,
+        }}
+      >
         <button
           onClick={() => setOnglet("global")}
           style={{
-            marginRight: 10,
-            padding: 10,
+            flex: "1 1 150px",
+            padding: 12,
             backgroundColor: onglet === "global" ? "#4CAF50" : "#eee",
             color: onglet === "global" ? "#fff" : "#000",
             border: "none",
-            borderRadius: 5,
+            borderRadius: 6,
+            fontWeight: "bold",
           }}
         >
           📂 Portefeuille Global
@@ -28,19 +74,20 @@ export default function AgentHome({ agentId }: { agentId: string }) {
         <button
           onClick={() => setOnglet("mes_contacts")}
           style={{
-            padding: 10,
+            flex: "1 1 150px",
+            padding: 12,
             backgroundColor: onglet === "mes_contacts" ? "#2196F3" : "#eee",
             color: onglet === "mes_contacts" ? "#fff" : "#000",
             border: "none",
-            borderRadius: 5,
+            borderRadius: 6,
+            fontWeight: "bold",
           }}
         >
           📁 Mes Contacts
         </button>
-      </div>
+      </nav>
 
-      {onglet === "global" && <AppelContact agentId={agentId} />}
-      {onglet === "mes_contacts" && <PortefeuilleAgent agentId={agentId} />}
+      <main>{onglet === "global" ? <AppelContact agentId={agentId} /> : <PortefeuilleAgent agentId={agentId} />}</main>
     </div>
   );
 }

@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
 // Types
@@ -47,31 +46,21 @@ export default function DashboardAdmin() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: users, error: userError } = await supabase
+      const { data: users } = await supabase
         .from("users")
         .select("id, name, email")
         .eq("role", "agent");
 
-      const { data: calls, error: callError } = await supabase
+      const { data: calls } = await supabase
         .from("call_history")
         .select("*")
         .order("date", { ascending: false });
 
-      const { data: contacts, error: contactError } = await supabase
+      const { data: contacts } = await supabase
         .from("contacts")
         .select("*");
 
-      if (
-        !users ||
-        !calls ||
-        !contacts ||
-        userError ||
-        callError ||
-        contactError
-      ) {
-        console.error("Erreur lors du chargement des données.");
-        return;
-      }
+      if (!users || !calls || !contacts) return;
 
       const finalStats: AgentStat[] = users.map((agent) => {
         const appels = calls.filter((c) => c.agent_id === agent.id);
@@ -103,14 +92,12 @@ export default function DashboardAdmin() {
     };
 
     const fetchContactsAValider = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("contacts")
         .select("*")
         .eq("statut", "à_valider");
 
-      if (!error && data) {
-        setContactsAValider(data);
-      }
+      if (data) setContactsAValider(data);
     };
 
     fetchData();
@@ -143,40 +130,27 @@ export default function DashboardAdmin() {
     setContactsAValider((prev) => prev.filter((c) => c.id !== id));
   };
 
-  return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: "Arial",
-        maxWidth: 1000,
-        margin: "auto",
-      }}
-    >
-      <h1>👑 Tableau de bord Admin</h1>
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) alert("Erreur lors de la déconnexion : " + error.message);
+  };
 
-      {/* Onglets */}
+  return (
+    <div style={{ padding: 20, fontFamily: "Arial", maxWidth: 1000, margin: "auto" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+        <h1 style={{ fontSize: "1.6rem", marginBottom: 10 }}>👑 Tableau de bord Admin</h1>
+        <button onClick={handleLogout} style={actionBtnStyle("#f44336")}>🔒 Déconnexion</button>
+      </header>
+
       <div style={{ marginBottom: 20 }}>
-        <button
-          onClick={() => setActiveTab("stats")}
-          style={tabStyle(activeTab === "stats", "#4CAF50")}
-        >
-          📊 Statistiques & validations
-        </button>
-        <button
-          onClick={() => setActiveTab("historique")}
-          style={tabStyle(activeTab === "historique", "#2196F3")}
-        >
-          📄 Historique par agent
-        </button>
+        <button onClick={() => setActiveTab("stats")} style={tabStyle(activeTab === "stats", "#4CAF50")}>📊 Statistiques & validations</button>
+        <button onClick={() => setActiveTab("historique")} style={tabStyle(activeTab === "historique", "#2196F3")}>📄 Historique par agent</button>
       </div>
 
-      {/* STATISTIQUES */}
       {activeTab === "stats" && (
         <>
           <h2>📊 Statistiques des agents</h2>
-          <table
-            style={{ width: "100%", borderCollapse: "collapse", marginTop: 20 }}
-          >
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 20 }}>
             <thead>
               <tr>
                 <th style={cellStyle}>Nom</th>
@@ -201,83 +175,52 @@ export default function DashboardAdmin() {
             </tbody>
           </table>
 
-          <h2 style={{ marginTop: 40, color: "#444" }}>
-            📌 Contacts en attente de validation
-          </h2>
+          <h2 style={{ marginTop: 40, color: "#444" }}>📌 Contacts en attente de validation</h2>
           {contactsAValider.length === 0 ? (
             <p>Aucun contact à valider.</p>
           ) : (
-            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-              {contactsAValider.map((c) => (
-                <li
-                  key={c.id}
-                  style={{
-                    border: "1px solid #ccc",
-                    padding: 10,
-                    marginBottom: 10,
-                    borderRadius: 6,
-                    backgroundColor: "#fff",
-                  }}
-                >
-                  <strong>{c.nom}</strong> — 📞 {c.telephone}
-                  <br />
-                  🏠 {c.adresse || "—"} {c.npa || ""}
-                  <br />
-                  📅 RDV :{" "}
-                  {c.rdv_date
-                    ? new Date(c.rdv_date).toLocaleDateString("fr-FR")
-                    : "Non défini"}
-                  <div style={{ marginTop: 8 }}>
-                    <button
-                      onClick={() => validerContact(c.id)}
-                      style={actionBtnStyle("#4CAF50")}
-                    >
-                      ✅ Valider
-                    </button>
-                    <button
-                      onClick={() => archiverContact(c.id)}
-                      style={actionBtnStyle("#f44336")}
-                    >
-                      ❌ Refuser
-                    </button>
-                  </div>
-                </li>
-              ))}
+            <ul style={{ listStyle: "none", paddingLeft: 0, display: "grid", gap: 10 }}>
+              {contactsAValider.map((c) => {
+                const dernierAppel = appelHistory.find(
+                  (a) => a.contact_id === c.id && a.commentaire
+                );
+                return (
+                  <li key={c.id} style={{ border: "1px solid #ddd", padding: 16, borderRadius: 8, backgroundColor: "#fafafa", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                    <div style={{ fontWeight: "bold" }}>{c.nom} — 📞 {c.telephone}</div>
+                    <div>🏠 {c.adresse || "—"} {c.npa || ""}</div>
+                    <div>📅 RDV : {c.rdv_date ? new Date(c.rdv_date).toLocaleDateString("fr-FR") : "Non défini"}</div>
+                    {dernierAppel && (
+                      <div style={{ marginTop: 8, fontStyle: "italic", color: "#444" }}>
+                        📝 Dernier commentaire : {dernierAppel.commentaire}
+                      </div>
+                    )}
+                    <div style={{ marginTop: 10 }}>
+                      <button onClick={() => validerContact(c.id)} style={actionBtnStyle("#4CAF50")}>✅ Valider</button>
+                      <button onClick={() => archiverContact(c.id)} style={actionBtnStyle("#f44336")}>❌ Refuser</button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </>
       )}
 
-      {/* HISTORIQUE */}
       {activeTab === "historique" && (
         <div>
           <h2>📄 Historique des validations par agent</h2>
           {agents.map((agent) => {
             const historiques = appelHistory.filter(
-              (a) =>
-                a.agent_id === agent.id &&
-                (a.commentaire || "").toLowerCase().includes("signature")
+              (a) => a.agent_id === agent.id && a.commentaire
             );
-
             if (historiques.length === 0) return null;
-
             return (
-              <div
-                key={agent.id}
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: 6,
-                  padding: 15,
-                  marginBottom: 20,
-                  backgroundColor: "#f9f9f9",
-                }}
-              >
+              <div key={agent.id} style={{ border: "1px solid #ccc", borderRadius: 6, padding: 15, marginBottom: 20, backgroundColor: "#f9f9f9" }}>
                 <h3>👤 {agent.name}</h3>
                 <ul>
                   {historiques.map((h) => (
                     <li key={h.id}>
-                      📅 {new Date(h.date).toLocaleString("fr-FR")} — 🗣️{" "}
-                      <strong>{h.commentaire}</strong>
+                      📅 {new Date(h.date).toLocaleString("fr-FR")} — 🗣️ <strong>{h.commentaire}</strong>
                     </li>
                   ))}
                 </ul>
@@ -290,20 +233,23 @@ export default function DashboardAdmin() {
   );
 }
 
-// Styles
 const cellStyle: React.CSSProperties = {
-  border: "1px solid #ccc",
-  padding: "8px",
-  textAlign: "left",
+  borderBottom: "1px solid #e0e0e0",
+  padding: "12px 8px",
+  fontSize: "0.95rem",
+  backgroundColor: "#fff",
 };
 
 const tabStyle = (isActive: boolean, color: string): React.CSSProperties => ({
   marginRight: 10,
-  padding: 10,
-  backgroundColor: isActive ? color : "#eee",
-  color: isActive ? "#fff" : "#000",
+  padding: "10px 16px",
+  backgroundColor: isActive ? color : "#f0f0f0",
+  color: isActive ? "#fff" : "#333",
+  fontWeight: isActive ? "bold" : "normal",
   border: "none",
-  borderRadius: 5,
+  borderRadius: 8,
+  cursor: "pointer",
+  transition: "all 0.2s ease-in-out",
 });
 
 const actionBtnStyle = (bg: string): React.CSSProperties => ({
@@ -311,6 +257,9 @@ const actionBtnStyle = (bg: string): React.CSSProperties => ({
   backgroundColor: bg,
   color: "#fff",
   border: "none",
-  padding: "6px 12px",
-  borderRadius: 4,
+  padding: "8px 14px",
+  fontWeight: "bold",
+  borderRadius: 6,
+  cursor: "pointer",
+  transition: "0.2s",
 });
