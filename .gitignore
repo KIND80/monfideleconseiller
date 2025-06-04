@@ -1,0 +1,6 @@
+# Dossiers à ignorer
+/node_modules
+/build
+/.cache
+.env
+
