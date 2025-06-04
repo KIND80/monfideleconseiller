@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
 type Contact = {
@@ -60,9 +59,7 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
 
     await supabase
       .from("contacts")
-      .update({
-        statut: "à_valider",
-      })
+      .update({ statut: "à_valider" })
       .eq("id", contactId);
 
     await supabase.from("call_history").insert({
@@ -77,15 +74,9 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
   };
 
   return (
-    <div
-      style={{
-        padding: 20,
-        maxWidth: 800,
-        margin: "0 auto",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1>📁 Mon portefeuille</h1>
+    <div className="container">
+      <h1 className="text-center">📁 Mon portefeuille</h1>
+
       {contacts.map((c) => {
         const historique = callHistory
           .filter((h) => h.contact_id === c.id)
@@ -118,8 +109,7 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
             </p>
             {c.rdv_date && (
               <p>
-                <strong>📅 RDV prévu :</strong>{" "}
-                {new Date(c.rdv_date).toLocaleString()}
+                <strong>📅 RDV prévu :</strong> {new Date(c.rdv_date).toLocaleString()}
               </p>
             )}
 
@@ -155,11 +145,11 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
                     padding: "6px 10px",
                     border: "none",
                     borderRadius: 4,
+                    cursor: "pointer",
                   }}
                 >
                   ✅ Signature
                 </button>
-
                 <button
                   onClick={() => validerSignature(c.id, "Non Signature")}
                   style={{
@@ -168,6 +158,7 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
                     padding: "6px 10px",
                     border: "none",
                     borderRadius: 4,
+                    cursor: "pointer",
                   }}
                 >
                   ❌ Non Signature
