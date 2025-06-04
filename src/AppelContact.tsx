@@ -1,3 +1,4 @@
+// début du fichier
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
@@ -27,11 +28,11 @@ export default function AppelContact({ agentId }: { agentId: string }) {
   const [search, setSearch] = useState("");
   const [categorie, setCategorie] = useState("");
   const [current, setCurrent] = useState<Contact | null>(null);
-  const [etatAppel, setEtatAppel] = useState<"init" | "en_cours" | "oui">(
-    "init"
-  );
+  const [etatAppel, setEtatAppel] = useState<"init" | "en_cours" | "oui">("init");
   const [historique, setHistorique] = useState<Appel[]>([]);
   const [commentaire, setCommentaire] = useState("");
+  const [edition, setEdition] = useState(false);
+  const [form, setForm] = useState<Partial<Contact>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,7 +41,6 @@ export default function AppelContact({ agentId }: { agentId: string }) {
         .select("*")
         .eq("statut", "non_assigné")
         .eq("visible_globally", true);
-
       setContacts(response.data || []);
       setFiltered(response.data || []);
     };
@@ -59,9 +59,10 @@ export default function AppelContact({ agentId }: { agentId: string }) {
     }
 
     setFiltered(filtres);
-
     if (!search && filtres.length > 0) {
-      setCurrent(filtres[Math.floor(Math.random() * filtres.length)]);
+      const rand = filtres[Math.floor(Math.random() * filtres.length)];
+      setCurrent(rand);
+      setForm(rand); // init formulaire
     }
   }, [search, categorie, contacts]);
 
@@ -74,7 +75,7 @@ export default function AppelContact({ agentId }: { agentId: string }) {
         .eq("contact_id", current.id)
         .order("date", { ascending: false })
         .limit(3);
-      setHistorique((response.data || []) as any);
+      setHistorique(response.data || []);
     };
     fetchHistorique();
   }, [current]);
@@ -104,7 +105,6 @@ export default function AppelContact({ agentId }: { agentId: string }) {
 
   const handleRdv = async () => {
     if (!current || !commentaire.trim()) return;
-
     await enregistrerAppel("signature", commentaire.trim());
     await supabase
       .from("contacts")
@@ -131,13 +131,21 @@ export default function AppelContact({ agentId }: { agentId: string }) {
 
   const nextContact = () => {
     const restants = filtered.filter((c) => c.id !== current?.id);
-    setCurrent(
-      restants.length > 0
-        ? restants[Math.floor(Math.random() * restants.length)]
-        : null
-    );
+    const suivant = restants.length > 0
+      ? restants[Math.floor(Math.random() * restants.length)]
+      : null;
+    setCurrent(suivant);
+    setForm(suivant || {});
     setEtatAppel("init");
     setCommentaire("");
+    setEdition(false);
+  };
+
+  const handleUpdateContact = async () => {
+    if (!current || !form.nom) return;
+    await supabase.from("contacts").update(form).eq("id", current.id);
+    setCurrent({ ...current, ...form } as Contact);
+    setEdition(false);
   };
 
   if (!current) {
@@ -153,26 +161,10 @@ export default function AppelContact({ agentId }: { agentId: string }) {
   )}.svg`;
 
   return (
-    <div
-      style={{
-        fontFamily: "Segoe UI",
-        padding: 16,
-        maxWidth: 800,
-        margin: "0 auto",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
+    <div style={{ fontFamily: "Segoe UI", padding: 16, maxWidth: 800, margin: "0 auto" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <h2 style={{ fontSize: "1.5rem" }}>📂 Portefeuille Global</h2>
-        <button onClick={handleLogout} style={btn("gray")}>
-          🔓 Déconnexion
-        </button>
+        <button onClick={handleLogout} style={btn("gray")}>🔓 Déconnexion</button>
       </header>
 
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
@@ -195,62 +187,87 @@ export default function AppelContact({ agentId }: { agentId: string }) {
       </div>
 
       <div style={card}>
-        <div
-          style={{ display: "flex", alignItems: "center", marginBottom: 16 }}
-        >
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: "50%",
-              marginRight: 12,
-            }}
-          />
-          <div>
-            <h3 style={{ margin: 0 }}>{current.nom}</h3>
-            <small style={{ color: "#666" }}>{current.telephone}</small>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+            <img src={avatarUrl} alt="avatar" style={{
+              width: 60, height: 60, borderRadius: "50%", marginRight: 12
+            }} />
+            <div>
+              {edition ? (
+                <input
+                  value={form.nom || ""}
+                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                  style={{ ...inputStyle, width: 150 }}
+                />
+              ) : (
+                <>
+                  <h3 style={{ margin: 0 }}>{current.nom}</h3>
+                  <small style={{ color: "#666" }}>{current.telephone}</small>
+                </>
+              )}
+            </div>
           </div>
+          <button onClick={() => setEdition(!edition)} style={btn("gray")}>✏️</button>
         </div>
 
-        <p>
-          <strong>📍 Adresse :</strong> {current.adresse}, {current.npa}
-        </p>
-        <p>
-          <strong>🏷️ Catégorie :</strong> {current.categorie_contact}
-        </p>
-        <p>
-          <strong>🌍 Canton :</strong> {current.canton}
-        </p>
-        <p>
-          <strong>🛡️ Assurance :</strong> {current.type_assurance || "—"}
-        </p>
+        {edition ? (
+          <>
+            <input
+              placeholder="Téléphone"
+              value={form.telephone || ""}
+              onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <input
+              placeholder="Adresse"
+              value={form.adresse || ""}
+              onChange={(e) => setForm({ ...form, adresse: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <input
+              placeholder="NPA"
+              value={form.npa || ""}
+              onChange={(e) => setForm({ ...form, npa: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <input
+              placeholder="Canton"
+              value={form.canton || ""}
+              onChange={(e) => setForm({ ...form, canton: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <input
+              placeholder="Type assurance"
+              value={form.type_assurance || ""}
+              onChange={(e) => setForm({ ...form, type_assurance: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <button onClick={handleUpdateContact} style={btn("green")}>✅ Sauvegarder</button>
+          </>
+        ) : (
+          <>
+            <p><strong>📍 Adresse :</strong> {current.adresse}, {current.npa}</p>
+            <p><strong>🏷️ Catégorie :</strong> {current.categorie_contact}</p>
+            <p><strong>🌍 Canton :</strong> {current.canton}</p>
+            <p><strong>🛡️ Assurance :</strong> {current.type_assurance || "—"}</p>
+          </>
+        )}
 
         {etatAppel === "init" && (
           <div style={{ marginTop: 12 }}>
             <a href={`tel:${current.telephone}`}>
-              <button
-                onClick={() => setEtatAppel("en_cours")}
-                style={btn("blue")}
-              >
+              <button onClick={() => setEtatAppel("en_cours")} style={btn("blue")}>
                 📞 Appeler
               </button>
             </a>
-            <button onClick={nextContact} style={btn("gray")}>
-              ⏭️ Passer
-            </button>
+            <button onClick={nextContact} style={btn("gray")}>⏭️ Passer</button>
           </div>
         )}
 
         {etatAppel === "en_cours" && (
           <div style={{ marginTop: 12 }}>
-            <button onClick={handleInjoignable} style={btn("red")}>
-              ❌ Injoignable
-            </button>
-            <button onClick={() => setEtatAppel("oui")} style={btn("green")}>
-              ✅ Oui
-            </button>
+            <button onClick={handleInjoignable} style={btn("red")}>❌ Injoignable</button>
+            <button onClick={() => setEtatAppel("oui")} style={btn("green")}>✅ Oui</button>
           </div>
         )}
 
@@ -263,20 +280,8 @@ export default function AppelContact({ agentId }: { agentId: string }) {
               style={{ ...inputStyle, height: 80 }}
             />
             <div style={{ marginTop: 8 }}>
-              <button
-                onClick={handleRdv}
-                disabled={!commentaire.trim()}
-                style={btn("blue")}
-              >
-                📅 RDV
-              </button>
-              <button
-                onClick={handleValiderCommentaire}
-                disabled={!commentaire.trim()}
-                style={btn("gray")}
-              >
-                📝 Valider
-              </button>
+              <button onClick={handleRdv} disabled={!commentaire.trim()} style={btn("blue")}>📅 RDV</button>
+              <button onClick={handleValiderCommentaire} disabled={!commentaire.trim()} style={btn("gray")}>📝 Valider</button>
             </div>
           </div>
         )}
@@ -287,8 +292,7 @@ export default function AppelContact({ agentId }: { agentId: string }) {
             <ul style={{ paddingLeft: 20 }}>
               {historique.map((appel) => (
                 <li key={appel.id}>
-                  📅 {new Date(appel.date).toLocaleDateString("fr-FR")} —{" "}
-                  {appel.statut_appel}
+                  📅 {new Date(appel.date).toLocaleDateString("fr-FR")} — {appel.statut_appel}
                   <br />
                   📝 {appel.commentaire}
                 </li>

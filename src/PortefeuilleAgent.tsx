@@ -26,6 +26,8 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [callHistory, setCallHistory] = useState<Appel[]>([]);
   const [commentaire, setCommentaire] = useState<Record<string, string>>({});
+  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  const [editValues, setEditValues] = useState<Record<string, Partial<Contact>>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,6 +75,28 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
     setCommentaire((prev) => ({ ...prev, [contactId]: "" }));
   };
 
+  const handleSave = async (id: string) => {
+    const updates = editValues[id];
+    if (!updates) return;
+
+    const { error } = await supabase
+      .from("contacts")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) {
+      alert("Erreur lors de la mise à jour");
+    } else {
+      setEditMode((prev) => ({ ...prev, [id]: false }));
+      setEditValues((prev) => ({ ...prev, [id]: {} }));
+      const { data: updatedContacts } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("agent_id", agentId);
+      setContacts(updatedContacts || []);
+    }
+  };
+
   return (
     <div className="container">
       <h1 className="text-center">📁 Mon portefeuille</h1>
@@ -81,6 +105,9 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
         const historique = callHistory
           .filter((h) => h.contact_id === c.id)
           .slice(0, 3);
+
+        const editing = editMode[c.id];
+        const values = editValues[c.id] || {};
 
         return (
           <div
@@ -94,24 +121,100 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
               boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
             }}
           >
-            <h2>{c.nom}</h2>
+            <h2>
+              {editing ? (
+                <input
+                  value={values.nom ?? c.nom}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], nom: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                c.nom
+              )}
+            </h2>
             <p>
-              <strong>📞 Téléphone :</strong> {c.telephone}
+              <strong>📞 Téléphone :</strong>{" "}
+              {editing ? (
+                <input
+                  value={values.telephone ?? c.telephone}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], telephone: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                c.telephone
+              )}
             </p>
             <p>
-              <strong>📋 Catégorie :</strong> {c.categorie_contact || "—"}
+              <strong>📋 Catégorie :</strong>{" "}
+              {editing ? (
+                <input
+                  value={values.categorie_contact ?? c.categorie_contact}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], categorie_contact: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                c.categorie_contact
+              )}
             </p>
             <p>
-              <strong>🛡️ Assurance :</strong> {c.type_assurance || "—"}
+              <strong>🛡️ Assurance :</strong>{" "}
+              {editing ? (
+                <input
+                  value={values.type_assurance ?? c.type_assurance}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], type_assurance: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                c.type_assurance
+              )}
             </p>
             <p>
-              <strong>🏠 Adresse :</strong> {c.adresse} {c.npa}
+              <strong>🏠 Adresse :</strong>{" "}
+              {editing ? (
+                <input
+                  value={values.adresse ?? c.adresse}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], adresse: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                `${c.adresse} ${c.npa}`
+              )}
             </p>
-            {c.rdv_date && (
-              <p>
-                <strong>📅 RDV prévu :</strong> {new Date(c.rdv_date).toLocaleString()}
-              </p>
-            )}
+
+            <div style={{ marginTop: 10 }}>
+              {editing ? (
+                <>
+                  <button onClick={() => handleSave(c.id)}>💾 Enregistrer</button>
+                  <button onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: false }))}>
+                    ❌ Annuler
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: true }))}>
+                  ✏️ Modifier
+                </button>
+              )}
+            </div>
 
             <textarea
               placeholder="Ajouter un commentaire ici..."
