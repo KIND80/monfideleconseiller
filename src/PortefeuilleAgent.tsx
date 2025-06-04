@@ -27,7 +27,9 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
   const [callHistory, setCallHistory] = useState<Appel[]>([]);
   const [commentaire, setCommentaire] = useState<Record<string, string>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
-  const [editValues, setEditValues] = useState<Record<string, Partial<Contact>>>({});
+  const [editValues, setEditValues] = useState<
+    Record<string, Partial<Contact>>
+  >({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,7 +162,10 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
                   onChange={(e) =>
                     setEditValues((prev) => ({
                       ...prev,
-                      [c.id]: { ...prev[c.id], categorie_contact: e.target.value },
+                      [c.id]: {
+                        ...prev[c.id],
+                        categorie_contact: e.target.value,
+                      },
                     }))
                   }
                 />
@@ -204,13 +209,23 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
             <div style={{ marginTop: 10 }}>
               {editing ? (
                 <>
-                  <button onClick={() => handleSave(c.id)}>💾 Enregistrer</button>
-                  <button onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: false }))}>
+                  <button onClick={() => handleSave(c.id)}>
+                    💾 Enregistrer
+                  </button>
+                  <button
+                    onClick={() =>
+                      setEditMode((prev) => ({ ...prev, [c.id]: false }))
+                    }
+                  >
                     ❌ Annuler
                   </button>
                 </>
               ) : (
-                <button onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: true }))}>
+                <button
+                  onClick={() =>
+                    setEditMode((prev) => ({ ...prev, [c.id]: true }))
+                  }
+                >
                   ✏️ Modifier
                 </button>
               )}

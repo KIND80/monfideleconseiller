@@ -69,10 +69,11 @@ export default function Login({
   return (
     <div className="container text-center" style={{ maxWidth: 400 }}>
       <h1 style={{ marginBottom: 10 }}>
-        👋 Bienvenue sur <strong>MyPocket</strong>
+        👋 Bienvenue sur <strong>My Pocket</strong>
       </h1>
       <p style={{ color: "#555", marginBottom: 30 }}>
-        Votre outil intelligent pour la gestion des contacts et le phoning efficace.
+        Votre outil intelligent pour la gestion des contacts et le phoning
+        efficace.
       </p>
 
       <h2>🔐 Connexion</h2>
