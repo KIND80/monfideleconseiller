@@ -1,8 +1,10 @@
+// ✅ Version refaite : DashboardAdmin.tsx (Tailwind + Responsive + Moderne) 
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
+import FicheClient from "./FicheClient";
 
-// Types
-type AgentStat = {
+interface AgentStat {
   id: string;
   name: string;
   email: string;
@@ -10,93 +12,64 @@ type AgentStat = {
   signatures: number;
   non_signatures: number;
   a_valider: number;
-};
+}
 
-type Contact = {
+interface Contact {
   id: string;
   nom: string;
   telephone: string;
-  adresse?: string;
-  npa?: string;
   agent_id: string;
   rdv_date: string;
   statut: string;
-};
+}
 
-type Appel = {
+interface Appel {
   id: string;
   contact_id: string;
   agent_id: string;
   date: string;
   commentaire: string | null;
-};
+}
 
-type Agent = {
+interface Agent {
   id: string;
   name: string;
   email: string;
-};
+}
 
 export default function DashboardAdmin() {
   const [stats, setStats] = useState<AgentStat[]>([]);
   const [contactsAValider, setContactsAValider] = useState<Contact[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [appelHistory, setAppelHistory] = useState<Appel[]>([]);
-  const [activeTab, setActiveTab] = useState<"stats" | "historique">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "historique" | "agents">("stats");
+  const [ficheActiveId, setFicheActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: users } = await supabase
-        .from("users")
-        .select("id, name, email")
-        .eq("role", "agent");
-
-      const { data: calls } = await supabase
-        .from("call_history")
-        .select("*")
-        .order("date", { ascending: false });
-
-      const { data: contacts } = await supabase
-        .from("contacts")
-        .select("*");
-
+      const { data: users } = await supabase.from("users").select("id, name, email").eq("role", "agent");
+      const { data: calls } = await supabase.from("call_history").select("*").order("date", { ascending: false });
+      const { data: contacts } = await supabase.from("contacts").select("*");
       if (!users || !calls || !contacts) return;
-
-      const finalStats: AgentStat[] = users.map((agent) => {
+      const finalStats = users.map((agent) => {
         const appels = calls.filter((c) => c.agent_id === agent.id);
-        const total_appels = appels.length;
-        const signatures = appels.filter((a) =>
-          (a.commentaire || "").toLowerCase().includes("signature")
-        ).length;
-        const non_signatures = appels.filter((a) =>
-          (a.commentaire || "").toLowerCase().includes("non signature")
-        ).length;
-        const a_valider = contacts.filter(
-          (c) => c.agent_id === agent.id && c.statut === "à_valider"
-        ).length;
-
         return {
           id: agent.id,
           name: agent.name,
           email: agent.email,
-          total_appels,
-          signatures,
-          non_signatures,
-          a_valider,
+          total_appels: appels.length,
+          signatures: appels.filter((a) => (a.commentaire || "").toLowerCase().includes("signature")).length,
+          non_signatures: appels.filter((a) => (a.commentaire || "").toLowerCase().includes("non signature")).length,
+          a_valider: contacts.filter((c) => c.agent_id === agent.id && c.statut === "à_valider").length,
         };
       });
-
       setStats(finalStats);
       setAgents(users);
       setAppelHistory(calls);
     };
 
     const fetchContactsAValider = async () => {
-      const { data } = await supabase
-        .from("contacts")
-        .select("*")
-        .eq("statut", "à_valider");
-
+      const { data } = await supabase.from("contacts").select("*").eq("statut", "à_valider");
       if (data) setContactsAValider(data);
     };
 
@@ -104,30 +77,10 @@ export default function DashboardAdmin() {
     fetchContactsAValider();
   }, []);
 
-  const validerContact = async (id: string) => {
-    await supabase
-      .from("contacts")
-      .update({
-        statut: "non_assigné",
-        agent_id: null,
-        rdv_date: null,
-        visible_globally: true,
-      })
-      .eq("id", id);
-
-    setContactsAValider((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  const archiverContact = async (id: string) => {
-    await supabase
-      .from("contacts")
-      .update({
-        statut: "archivé",
-        visible_globally: false,
-      })
-      .eq("id", id);
-
-    setContactsAValider((prev) => prev.filter((c) => c.id !== id));
+  const supprimerAgent = async (id: string) => {
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) alert("Erreur suppression : " + error.message);
+    else setAgents((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleLogout = async () => {
@@ -136,130 +89,116 @@ export default function DashboardAdmin() {
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial", maxWidth: 1000, margin: "auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: "1.6rem", marginBottom: 10 }}>👑 Tableau de bord Admin</h1>
-        <button onClick={handleLogout} style={actionBtnStyle("#f44336")}>🔒 Déconnexion</button>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <header className="flex flex-wrap justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">👑 Tableau de bord Admin</h1>
+        <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded">🔒 Déconnexion</button>
       </header>
 
-      <div style={{ marginBottom: 20 }}>
-        <button onClick={() => setActiveTab("stats")} style={tabStyle(activeTab === "stats", "#4CAF50")}>📊 Statistiques & validations</button>
-        <button onClick={() => setActiveTab("historique")} style={tabStyle(activeTab === "historique", "#2196F3")}>📄 Historique par agent</button>
+      <div className="mb-6 flex gap-3 flex-wrap">
+        <button onClick={() => setActiveTab("stats")} className={`px-4 py-2 rounded ${activeTab === "stats" ? "bg-green-600 text-white" : "bg-gray-200"}`}>📊 Statistiques</button>
+        <button onClick={() => setActiveTab("historique")} className={`px-4 py-2 rounded ${activeTab === "historique" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>📄 Historique</button>
+        <button onClick={() => setActiveTab("agents")} className={`px-4 py-2 rounded ${activeTab === "agents" ? "bg-purple-600 text-white" : "bg-gray-200"}`}>👥 Agents</button>
       </div>
 
+      {ficheActiveId && (
+        <div className="border border-gray-300 rounded p-4 mb-4">
+          <FicheClient contactId={ficheActiveId} userRole="admin" userName="ADMIN" />
+          <button onClick={() => setFicheActiveId(null)} className="mt-2 text-sm text-red-600">❌ Fermer la fiche</button>
+        </div>
+      )}
+
       {activeTab === "stats" && (
-        <>
-          <h2>📊 Statistiques des agents</h2>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 20 }}>
-            <thead>
+        <div>
+          <h2 className="text-xl font-semibold mb-4">📊 Statistiques par agent</h2>
+          <div className="overflow-auto">
+            <table className="w-full table-auto border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-3 py-2">Nom</th>
+                  <th className="border px-3 py-2">Email</th>
+                  <th className="border px-3 py-2">Appels</th>
+                  <th className="border px-3 py-2">Signatures</th>
+                  <th className="border px-3 py-2">Non Signatures</th>
+                  <th className="border px-3 py-2">À valider</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.map((s) => (
+                  <tr key={s.id} className="text-center">
+                    <td className="border px-3 py-2">{s.name}</td>
+                    <td className="border px-3 py-2">{s.email}</td>
+                    <td className="border px-3 py-2">{s.total_appels}</td>
+                    <td className="border px-3 py-2">{s.signatures}</td>
+                    <td className="border px-3 py-2">{s.non_signatures}</td>
+                    <td className="border px-3 py-2">{s.a_valider}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h2 className="text-xl font-semibold mt-8 mb-2">📝 Fiches à valider</h2>
+          <table className="w-full table-auto border-collapse text-sm">
+            <thead className="bg-gray-100">
               <tr>
-                <th style={cellStyle}>Nom</th>
-                <th style={cellStyle}>Email</th>
-                <th style={cellStyle}>Appels</th>
-                <th style={cellStyle}>Signatures</th>
-                <th style={cellStyle}>Non signatures</th>
-                <th style={cellStyle}>À valider</th>
+                <th className="border px-3 py-2">Nom</th>
+                <th className="border px-3 py-2">Téléphone</th>
+                <th className="border px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {stats.map((agent) => (
-                <tr key={agent.id}>
-                  <td style={cellStyle}>{agent.name}</td>
-                  <td style={cellStyle}>{agent.email}</td>
-                  <td style={cellStyle}>{agent.total_appels}</td>
-                  <td style={cellStyle}>{agent.signatures}</td>
-                  <td style={cellStyle}>{agent.non_signatures}</td>
-                  <td style={cellStyle}>{agent.a_valider}</td>
+              {contactsAValider.map((c) => (
+                <tr key={c.id} className="text-center">
+                  <td className="border px-3 py-2">{c.nom}</td>
+                  <td className="border px-3 py-2">{c.telephone}</td>
+                  <td className="border px-3 py-2">
+                    <button onClick={() => setFicheActiveId(c.id)} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">📝 Consulter</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-
-          <h2 style={{ marginTop: 40, color: "#444" }}>📌 Contacts en attente de validation</h2>
-          {contactsAValider.length === 0 ? (
-            <p>Aucun contact à valider.</p>
-          ) : (
-            <ul style={{ listStyle: "none", paddingLeft: 0, display: "grid", gap: 10 }}>
-              {contactsAValider.map((c) => {
-                const dernierAppel = appelHistory.find(
-                  (a) => a.contact_id === c.id && a.commentaire
-                );
-                return (
-                  <li key={c.id} style={{ border: "1px solid #ddd", padding: 16, borderRadius: 8, backgroundColor: "#fafafa", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                    <div style={{ fontWeight: "bold" }}>{c.nom} — 📞 {c.telephone}</div>
-                    <div>🏠 {c.adresse || "—"} {c.npa || ""}</div>
-                    <div>📅 RDV : {c.rdv_date ? new Date(c.rdv_date).toLocaleDateString("fr-FR") : "Non défini"}</div>
-                    {dernierAppel && (
-                      <div style={{ marginTop: 8, fontStyle: "italic", color: "#444" }}>
-                        📝 Dernier commentaire : {dernierAppel.commentaire}
-                      </div>
-                    )}
-                    <div style={{ marginTop: 10 }}>
-                      <button onClick={() => validerContact(c.id)} style={actionBtnStyle("#4CAF50")}>✅ Valider</button>
-                      <button onClick={() => archiverContact(c.id)} style={actionBtnStyle("#f44336")}>❌ Refuser</button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </>
+        </div>
       )}
 
       {activeTab === "historique" && (
         <div>
-          <h2>📄 Historique des validations par agent</h2>
-          {agents.map((agent) => {
-            const historiques = appelHistory.filter(
-              (a) => a.agent_id === agent.id && a.commentaire
-            );
-            if (historiques.length === 0) return null;
-            return (
-              <div key={agent.id} style={{ border: "1px solid #ccc", borderRadius: 6, padding: 15, marginBottom: 20, backgroundColor: "#f9f9f9" }}>
-                <h3>👤 {agent.name}</h3>
-                <ul>
-                  {historiques.map((h) => (
-                    <li key={h.id}>
-                      📅 {new Date(h.date).toLocaleString("fr-FR")} — 🗣️ <strong>{h.commentaire}</strong>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+          <h2 className="text-xl font-semibold mb-4">📄 Historique des appels</h2>
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {appelHistory.map((a) => (
+              <li key={a.id}>{a.date} — {a.commentaire}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {activeTab === "agents" && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">👥 Gestion des agents</h2>
+          <p className="text-gray-500">La création des comptes agents se fait désormais manuellement depuis Supabase.</p>
+          <table className="w-full table-auto border-collapse text-sm mt-4">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-3 py-2">Nom</th>
+                <th className="border px-3 py-2">Email</th>
+                <th className="border px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agents.map((a) => (
+                <tr key={a.id} className="text-center">
+                  <td className="border px-3 py-2">{a.name}</td>
+                  <td className="border px-3 py-2">{a.email}</td>
+                  <td className="border px-3 py-2">
+                    <button onClick={() => supprimerAgent(a.id)} className="bg-red-600 text-white px-3 py-1 rounded text-sm">🗑️ Supprimer</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 }
-
-const cellStyle: React.CSSProperties = {
-  borderBottom: "1px solid #e0e0e0",
-  padding: "12px 8px",
-  fontSize: "0.95rem",
-  backgroundColor: "#fff",
-};
-
-const tabStyle = (isActive: boolean, color: string): React.CSSProperties => ({
-  marginRight: 10,
-  padding: "10px 16px",
-  backgroundColor: isActive ? color : "#f0f0f0",
-  color: isActive ? "#fff" : "#333",
-  fontWeight: isActive ? "bold" : "normal",
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-  transition: "all 0.2s ease-in-out",
-});
-
-const actionBtnStyle = (bg: string): React.CSSProperties => ({
-  marginRight: 10,
-  backgroundColor: bg,
-  color: "#fff",
-  border: "none",
-  padding: "8px 14px",
-  fontWeight: "bold",
-  borderRadius: 6,
-  cursor: "pointer",
-  transition: "0.2s",
-});
