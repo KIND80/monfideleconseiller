@@ -5,7 +5,7 @@ import DashboardAdmin from "./DashboardAdmin";
 import AgentHome from "./AgentHome";
 
 export default function App() {
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<"admin" | "agent" | null>(null);
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -13,18 +13,32 @@ export default function App() {
     const checkSession = async () => {
       const {
         data: { session },
+        error,
       } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Erreur session :", error.message);
+        setLoading(false);
+        return;
+      }
 
-      if (session?.user) {
-        const { data: userData } = await supabase
+      const user = session?.user;
+      if (user?.id) {
+        const { data: userData, error: userError } = await supabase
           .from("users")
           .select("role")
-          .eq("id", session.user.id)
+          .eq("id", user.id)
           .single();
 
-        setRole(userData?.role || null);
-        setUserId(session.user.id);
+        if (userError) {
+          console.error("Erreur récupération rôle :", userError.message);
+        } else if (userData?.role === "admin" || userData?.role === "agent") {
+          setRole(userData.role);
+          setUserId(user.id);
+        } else {
+          console.warn("Rôle non reconnu :", userData?.role);
+        }
       }
+
       setLoading(false);
     };
 
@@ -40,20 +54,21 @@ export default function App() {
     );
 
     return () => {
-      listener.subscription.unsubscribe();
+      listener?.subscription?.unsubscribe();
     };
   }, []);
 
   if (loading) {
     return (
-      <div
-        style={{
-          paddingTop: 100,
-          textAlign: "center",
-          fontFamily: "Arial",
-        }}
-      >
-        <h2>Chargement en cours...</h2>
+      <div className="h-screen flex items-center justify-center text-center">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-700">
+            ⏳ Chargement en cours...
+          </h2>
+          <p className="text-gray-500 mt-2">
+            Veuillez patienter quelques instants.
+          </p>
+        </div>
       </div>
     );
   }
@@ -61,34 +76,28 @@ export default function App() {
   if (!role) {
     return (
       <Login
-        onLogin={(r, id) => {
-          setRole(r);
-          setUserId(id);
+        onLogin={(r: string, id: string) => {
+          if (r === "admin" || r === "agent") {
+            setRole(r);
+            setUserId(id);
+          } else {
+            alert("Rôle non reconnu.");
+          }
         }}
       />
     );
   }
 
-  if (role === "admin") {
-    return <DashboardAdmin />;
-  }
-
-  if (role === "agent") {
-    return <AgentHome agentId={userId} />;
-  }
+  if (role === "admin") return <DashboardAdmin />;
+  if (role === "agent") return <AgentHome agentId={userId} />;
 
   return (
-    <div
-      style={{
-        paddingTop: 100,
-        textAlign: "center",
-        fontFamily: "Arial",
-        maxWidth: 600,
-        margin: "0 auto",
-      }}
-    >
-      <h2>⛔ Rôle inconnu ou non autorisé</h2>
-      <p>Merci de contacter un administrateur si vous pensez que c’est une erreur.</p>
+    <div className="h-screen flex flex-col items-center justify-center px-4 text-center">
+      <h2 className="text-2xl font-bold text-red-600">⛔ Accès refusé</h2>
+      <p className="mt-2 text-gray-600 max-w-md">
+        Rôle non autorisé ou introuvable. Merci de contacter un administrateur
+        si vous pensez que c’est une erreur.
+      </p>
     </div>
   );
 }

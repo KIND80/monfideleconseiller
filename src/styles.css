@@ -6,6 +6,7 @@
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .App h1 {
@@ -13,4 +14,27 @@
   color: #333;
   font-size: 2rem;
   font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+/* Mode sombre support */
+body.dark-mode .App {
+  background-color: #1e1e1e;
+  color: #eee;
+  border: 1px solid #333;
+}
+
+body.dark-mode .App h1 {
+  color: #fff;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .App {
+    padding: 20px 10px;
+  }
+
+  .App h1 {
+    font-size: 1.5rem;
+  }
 }

@@ -1,3 +1,5 @@
+// ✅ PortefeuilleAgent.tsx (version modernisée avec Tailwind CSS)
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
@@ -26,6 +28,8 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [callHistory, setCallHistory] = useState<Appel[]>([]);
   const [commentaire, setCommentaire] = useState<Record<string, string>>({});
+  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  const [editValues, setEditValues] = useState<Record<string, Partial<Contact>>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,7 +55,6 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
     type: "Signature" | "Non Signature"
   ) => {
     const commentaireTexte = commentaire[contactId]?.trim();
-
     if (!commentaireTexte) {
       alert("Merci de saisir un commentaire avant de valider.");
       return;
@@ -73,93 +76,125 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
     setCommentaire((prev) => ({ ...prev, [contactId]: "" }));
   };
 
+  const handleSave = async (id: string) => {
+    const updates = editValues[id];
+    if (!updates) return;
+
+    const { error } = await supabase.from("contacts").update(updates).eq("id", id);
+    if (!error) {
+      setEditMode((prev) => ({ ...prev, [id]: false }));
+      setEditValues((prev) => ({ ...prev, [id]: {} }));
+      const { data: updatedContacts } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("agent_id", agentId);
+      setContacts(updatedContacts || []);
+    }
+  };
+
   return (
-    <div className="container">
-      <h1 className="text-center">📁 Mon portefeuille</h1>
+    <div className="max-w-5xl mx-auto p-4">
+      <h1 className="text-2xl font-bold text-center mb-6">📁 Mon portefeuille</h1>
 
       {contacts.map((c) => {
         const historique = callHistory
           .filter((h) => h.contact_id === c.id)
           .slice(0, 3);
+        const editing = editMode[c.id];
+        const values = editValues[c.id] || {};
 
         return (
-          <div
-            key={c.id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: 8,
-              padding: 15,
-              marginBottom: 20,
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-            }}
-          >
-            <h2>{c.nom}</h2>
-            <p>
-              <strong>📞 Téléphone :</strong> {c.telephone}
-            </p>
-            <p>
-              <strong>📋 Catégorie :</strong> {c.categorie_contact || "—"}
-            </p>
-            <p>
-              <strong>🛡️ Assurance :</strong> {c.type_assurance || "—"}
-            </p>
-            <p>
-              <strong>🏠 Adresse :</strong> {c.adresse} {c.npa}
-            </p>
-            {c.rdv_date && (
-              <p>
-                <strong>📅 RDV prévu :</strong> {new Date(c.rdv_date).toLocaleString()}
-              </p>
+          <div key={c.id} className="card fade-in">
+            <h2 className="text-xl font-semibold mb-2">
+              {editing ? (
+                <input
+                  className="border rounded px-2 py-1 w-full"
+                  value={values.nom ?? c.nom}
+                  onChange={(e) =>
+                    setEditValues((prev) => ({
+                      ...prev,
+                      [c.id]: { ...prev[c.id], nom: e.target.value },
+                    }))
+                  }
+                />
+              ) : (
+                c.nom
+              )}
+            </h2>
+
+            {["telephone", "categorie_contact", "type_assurance", "adresse"].map(
+              (field) => (
+                <p key={field} className="mb-1">
+                  <strong>
+                    {field === "telephone" && "📞 Téléphone :"}
+                    {field === "categorie_contact" && "📋 Catégorie :"}
+                    {field === "type_assurance" && "🛁 Assurance :"}
+                    {field === "adresse" && "🏠 Adresse :"}
+                  </strong>{" "}
+                  {editing ? (
+                    <input
+                      className="border rounded px-2 py-1 w-full"
+                      value={values[field as keyof Contact] ?? c[field as keyof Contact]}
+                      onChange={(e) =>
+                        setEditValues((prev) => ({
+                          ...prev,
+                          [c.id]: {
+                            ...prev[c.id],
+                            [field]: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  ) : (
+                    c[field as keyof Contact]
+                  )}
+                </p>
+              )
             )}
+
+            <div className="mt-3 flex gap-2">
+              {editing ? (
+                <>
+                  <button className="btn" onClick={() => handleSave(c.id)}>💾 Enregistrer</button>
+                  <button
+                    className="btn btn-gray"
+                    onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: false }))}
+                  >
+                    ❌ Annuler
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: true }))}
+                >
+                  ✏️ Modifier
+                </button>
+              )}
+            </div>
 
             <textarea
               placeholder="Ajouter un commentaire ici..."
               value={commentaire[c.id] || ""}
               onChange={(e) =>
-                setCommentaire((prev) => ({
-                  ...prev,
-                  [c.id]: e.target.value,
-                }))
+                setCommentaire((prev) => ({ ...prev, [c.id]: e.target.value }))
               }
-              style={{
-                width: "100%",
-                marginTop: 10,
-                padding: 8,
-                borderRadius: 4,
-                border: "1px solid #ccc",
-              }}
+              className="w-full mt-3 p-2 border rounded"
             />
 
             {c.statut === "rdv" && (
-              <div style={{ marginTop: 15 }}>
-                <p>
-                  <strong>🕓 RDV à valider :</strong>
+              <div className="mt-4">
+                <p className="mb-2 font-medium">🕓 RDV à valider :
                 </p>
                 <button
+                  className="btn mr-2"
                   onClick={() => validerSignature(c.id, "Signature")}
-                  style={{
-                    marginRight: 10,
-                    backgroundColor: "#4CAF50",
-                    color: "#fff",
-                    padding: "6px 10px",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                  }}
                 >
                   ✅ Signature
                 </button>
                 <button
+                  className="btn btn-danger"
                   onClick={() => validerSignature(c.id, "Non Signature")}
-                  style={{
-                    backgroundColor: "#f44336",
-                    color: "#fff",
-                    padding: "6px 10px",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                  }}
                 >
                   ❌ Non Signature
                 </button>
@@ -167,16 +202,9 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
             )}
 
             {historique.length > 0 && (
-              <div
-                style={{
-                  marginTop: 15,
-                  backgroundColor: "#f7f7f7",
-                  padding: 10,
-                  borderRadius: 6,
-                }}
-              >
+              <div className="mt-4 bg-gray-100 p-3 rounded">
                 <strong>🕓 3 derniers appels :</strong>
-                <ul style={{ marginTop: 6 }}>
+                <ul className="mt-2 list-disc list-inside">
                   {historique.map((h) => (
                     <li key={h.id}>
                       {new Date(h.date).toLocaleString()} — {h.statut_appel}

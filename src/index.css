@@ -128,13 +128,48 @@ button:hover,
   border-radius: 12px;
   font-weight: 600;
 }
+
 .badge-success {
   background-color: #e8f5e9;
   color: #2e7d32;
 }
+
 .badge-error {
   background-color: #fdecea;
   color: #c62828;
+}
+
+/* ANIMATIONS */
+.fade-in {
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  button,
+  .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
 }
 
 /* MODE SOMBRE (optionnel) */
@@ -142,21 +177,26 @@ body.dark-mode {
   background-color: #121212;
   color: #eee;
 }
+
 body.dark-mode h1,
 body.dark-mode h2,
 body.dark-mode h3 {
   color: #fff;
 }
+
 body.dark-mode .card {
   background-color: #1e1e1e;
   border-color: #333;
 }
+
 body.dark-mode .btn {
   background-color: #388e3c;
 }
+
 body.dark-mode .btn-danger {
   background-color: #e53935;
 }
+
 body.dark-mode .btn-primary {
   background-color: #1976d2;
 }
