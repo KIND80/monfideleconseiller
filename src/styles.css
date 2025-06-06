@@ -29,6 +29,12 @@ body.dark-mode .App h1 {
 }
 
 /* Responsive design */
+@media (max-width: 900px) {
+  .App {
+    padding: 30px 15px;
+  }
+}
+
 @media (max-width: 600px) {
   .App {
     padding: 20px 10px;

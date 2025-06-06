@@ -62,17 +62,17 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
 
     await supabase
       .from("contacts")
-      .update({ statut: "à_valider" })
+      .update({ statut: "\u00e0_valider" })
       .eq("id", contactId);
 
     await supabase.from("call_history").insert({
       contact_id: contactId,
       agent_id: agentId,
-      statut_appel: "Répondu",
+      statut_appel: "R\u00e9pondu",
       commentaire: commentaireTexte || type,
     });
 
-    alert(`${type} soumise à validation.`);
+    alert(`${type} soumise \u00e0 validation.`);
     setCommentaire((prev) => ({ ...prev, [contactId]: "" }));
   };
 
@@ -94,7 +94,7 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
 
   return (
     <div className="max-w-5xl mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">📁 Mon portefeuille</h1>
+      <h1 className="text-2xl font-bold text-center mb-6">\ud83d\udcc1 Mon portefeuille</h1>
 
       {contacts.map((c) => {
         const historique = callHistory
@@ -126,10 +126,10 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
               (field) => (
                 <p key={field} className="mb-1">
                   <strong>
-                    {field === "telephone" && "📞 Téléphone :"}
-                    {field === "categorie_contact" && "📋 Catégorie :"}
-                    {field === "type_assurance" && "🛁 Assurance :"}
-                    {field === "adresse" && "🏠 Adresse :"}
+                    {field === "telephone" && "\ud83d\udcde T\u00e9l\u00e9phone :"}
+                    {field === "categorie_contact" && "\ud83d\udccb Cat\u00e9gorie :"}
+                    {field === "type_assurance" && "\ud83d\uddb1 Assurance :"}
+                    {field === "adresse" && "\ud83c\udfe0 Adresse :"}
                   </strong>{" "}
                   {editing ? (
                     <input
@@ -155,12 +155,12 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
             <div className="mt-3 flex gap-2">
               {editing ? (
                 <>
-                  <button className="btn" onClick={() => handleSave(c.id)}>💾 Enregistrer</button>
+                  <button className="btn" onClick={() => handleSave(c.id)}>\ud83d\udcc0 Enregistrer</button>
                   <button
                     className="btn btn-gray"
                     onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: false }))}
                   >
-                    ❌ Annuler
+                    \u274c Annuler
                   </button>
                 </>
               ) : (
@@ -168,7 +168,7 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
                   className="btn btn-primary"
                   onClick={() => setEditMode((prev) => ({ ...prev, [c.id]: true }))}
                 >
-                  ✏️ Modifier
+                  \u270f\ufe0f Modifier
                 </button>
               )}
             </div>
@@ -184,26 +184,25 @@ export default function PortefeuilleAgent({ agentId }: { agentId: string }) {
 
             {c.statut === "rdv" && (
               <div className="mt-4">
-                <p className="mb-2 font-medium">🕓 RDV à valider :
-                </p>
+                <p className="mb-2 font-medium">\ud83d\udd53 RDV \u00e0 valider :</p>
                 <button
                   className="btn mr-2"
                   onClick={() => validerSignature(c.id, "Signature")}
                 >
-                  ✅ Signature
+                  \u2705 Signature
                 </button>
                 <button
                   className="btn btn-danger"
                   onClick={() => validerSignature(c.id, "Non Signature")}
                 >
-                  ❌ Non Signature
+                  \u274c Non Signature
                 </button>
               </div>
             )}
 
             {historique.length > 0 && (
               <div className="mt-4 bg-gray-100 p-3 rounded">
-                <strong>🕓 3 derniers appels :</strong>
+                <strong>\ud83d\udd53 3 derniers appels :</strong>
                 <ul className="mt-2 list-disc list-inside">
                   {historique.map((h) => (
                     <li key={h.id}>

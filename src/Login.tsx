@@ -20,14 +20,14 @@ export default function Login({
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setErrorMsg("❌ " + error.message);
+      setErrorMsg("\u274c " + error.message);
       setLoading(false);
       return;
     }
 
     const user = data.user;
     if (!user) {
-      setErrorMsg("❌ Utilisateur introuvable.");
+      setErrorMsg("\u274c Utilisateur introuvable.");
       setLoading(false);
       return;
     }
@@ -39,7 +39,7 @@ export default function Login({
       .single();
 
     if (userError || !userData) {
-      setErrorMsg("❌ Impossible de récupérer le rôle.");
+      setErrorMsg("\u274c Impossible de r\u00e9cup\u00e9rer le r\u00f4le.");
       setLoading(false);
       return;
     }

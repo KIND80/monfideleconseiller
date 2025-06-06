@@ -1,5 +1,3 @@
-// ✅ Version refaite : AgentHome.tsx (Tailwind + Responsive + UI/UX améliorée)
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import AppelContact from "./AppelContact";
@@ -42,26 +40,26 @@ export default function AgentHome({ agentId }: AgentHomeProps) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <header className="text-center mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-800 mb-4">
+    <div className="container mx-auto px-4 py-8">
+      <header className="flex flex-col items-center gap-4 mb-10">
+        <h1 className="text-4xl font-bold text-zinc-800 flex items-center gap-2">
           👤 Espace Agent
         </h1>
         <button
           onClick={handleLogout}
-          className="bg-gradient-to-r from-red-500 to-red-700 text-white font-semibold px-5 py-2 rounded-lg shadow hover:scale-105 transition-transform"
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition"
         >
           🔒 Se déconnecter
         </button>
       </header>
 
-      <nav className="flex flex-wrap justify-center gap-4 mb-10">
+      <nav className="flex flex-wrap justify-center gap-3 mb-10">
         <button
           onClick={() => setOnglet("global")}
-          className={`px-5 py-2 rounded-full font-semibold shadow ${
+          className={`px-5 py-2 rounded-full text-sm font-medium transition ${
             onglet === "global"
               ? "bg-emerald-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-emerald-100"
+              : "bg-zinc-100 text-zinc-700 hover:bg-emerald-100"
           }`}
         >
           📂 Portefeuille Global
@@ -69,10 +67,10 @@ export default function AgentHome({ agentId }: AgentHomeProps) {
 
         <button
           onClick={() => setOnglet("mes_contacts")}
-          className={`px-5 py-2 rounded-full font-semibold shadow ${
+          className={`px-5 py-2 rounded-full text-sm font-medium transition ${
             onglet === "mes_contacts"
               ? "bg-sky-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-sky-100"
+              : "bg-zinc-100 text-zinc-700 hover:bg-sky-100"
           }`}
         >
           📁 Mes Contacts
@@ -80,26 +78,26 @@ export default function AgentHome({ agentId }: AgentHomeProps) {
 
         <button
           onClick={() => setOnglet("stats")}
-          className={`px-5 py-2 rounded-full font-semibold shadow ${
+          className={`px-5 py-2 rounded-full text-sm font-medium transition ${
             onglet === "stats"
               ? "bg-indigo-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-indigo-100"
+              : "bg-zinc-100 text-zinc-700 hover:bg-indigo-100"
           }`}
         >
           📊 Statistiques
         </button>
       </nav>
 
-      <main>
+      <main className="min-h-[200px]">
         {onglet === "global" && <AppelContact agentId={agentId} />}
         {onglet === "mes_contacts" && <PortefeuilleAgent agentId={agentId} />}
         {onglet === "stats" && (
-          <div className="bg-white shadow-xl p-6 rounded-xl border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <section className="bg-white shadow-md p-6 rounded-xl border border-gray-100 max-w-xl mx-auto">
+            <h2 className="text-2xl font-semibold text-zinc-800 flex items-center gap-2 mb-4">
               📊 Statistiques
             </h2>
             {stats ? (
-              <ul className="space-y-2 text-gray-700">
+              <ul className="space-y-2 text-zinc-700 text-base">
                 <li>
                   Total d'appels :{" "}
                   <span className="font-bold text-emerald-700">
@@ -120,11 +118,11 @@ export default function AgentHome({ agentId }: AgentHomeProps) {
                 </li>
               </ul>
             ) : (
-              <p className="text-gray-500 italic">
+              <p className="text-zinc-500 italic">
                 Chargement des statistiques...
               </p>
             )}
-          </div>
+          </section>
         )}
       </main>
     </div>

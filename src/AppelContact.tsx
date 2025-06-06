@@ -164,7 +164,7 @@ export default function AppelContact({ agentId }: AppelContactProps) {
 
   if (!current) {
     return (
-      <p className="text-center py-10">📭 Aucun contact pour le moment.</p>
+      <p className="text-center py-10">📬 Aucun contact pour le moment.</p>
     );
   }
 

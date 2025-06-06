@@ -1,4 +1,4 @@
-// ✅ Version refaite : DashboardAdmin.tsx (Tailwind + Responsive + Moderne) 
+// ✅ Version refaite : DashboardAdmin.tsx (Tailwind + Responsive + Moderne)
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
@@ -42,13 +42,21 @@ export default function DashboardAdmin() {
   const [contactsAValider, setContactsAValider] = useState<Contact[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [appelHistory, setAppelHistory] = useState<Appel[]>([]);
-  const [activeTab, setActiveTab] = useState<"stats" | "historique" | "agents">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "historique" | "agents">(
+    "stats"
+  );
   const [ficheActiveId, setFicheActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: users } = await supabase.from("users").select("id, name, email").eq("role", "agent");
-      const { data: calls } = await supabase.from("call_history").select("*").order("date", { ascending: false });
+      const { data: users } = await supabase
+        .from("users")
+        .select("id, name, email")
+        .eq("role", "agent");
+      const { data: calls } = await supabase
+        .from("call_history")
+        .select("*")
+        .order("date", { ascending: false });
       const { data: contacts } = await supabase.from("contacts").select("*");
       if (!users || !calls || !contacts) return;
       const finalStats = users.map((agent) => {
@@ -58,9 +66,15 @@ export default function DashboardAdmin() {
           name: agent.name,
           email: agent.email,
           total_appels: appels.length,
-          signatures: appels.filter((a) => (a.commentaire || "").toLowerCase().includes("signature")).length,
-          non_signatures: appels.filter((a) => (a.commentaire || "").toLowerCase().includes("non signature")).length,
-          a_valider: contacts.filter((c) => c.agent_id === agent.id && c.statut === "à_valider").length,
+          signatures: appels.filter((a) =>
+            (a.commentaire || "").toLowerCase().includes("signature")
+          ).length,
+          non_signatures: appels.filter((a) =>
+            (a.commentaire || "").toLowerCase().includes("non signature")
+          ).length,
+          a_valider: contacts.filter(
+            (c) => c.agent_id === agent.id && c.statut === "à_valider"
+          ).length,
         };
       });
       setStats(finalStats);
@@ -69,7 +83,10 @@ export default function DashboardAdmin() {
     };
 
     const fetchContactsAValider = async () => {
-      const { data } = await supabase.from("contacts").select("*").eq("statut", "à_valider");
+      const { data } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("statut", "à_valider");
       if (data) setContactsAValider(data);
     };
 
@@ -92,25 +109,64 @@ export default function DashboardAdmin() {
     <div className="max-w-6xl mx-auto px-4 py-6">
       <header className="flex flex-wrap justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">👑 Tableau de bord Admin</h1>
-        <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded">🔒 Déconnexion</button>
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 text-white px-4 py-2 rounded"
+        >
+          🔒 Déconnexion
+        </button>
       </header>
 
       <div className="mb-6 flex gap-3 flex-wrap">
-        <button onClick={() => setActiveTab("stats")} className={`px-4 py-2 rounded ${activeTab === "stats" ? "bg-green-600 text-white" : "bg-gray-200"}`}>📊 Statistiques</button>
-        <button onClick={() => setActiveTab("historique")} className={`px-4 py-2 rounded ${activeTab === "historique" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>📄 Historique</button>
-        <button onClick={() => setActiveTab("agents")} className={`px-4 py-2 rounded ${activeTab === "agents" ? "bg-purple-600 text-white" : "bg-gray-200"}`}>👥 Agents</button>
+        <button
+          onClick={() => setActiveTab("stats")}
+          className={`px-4 py-2 rounded ${
+            activeTab === "stats" ? "bg-green-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          📊 Statistiques
+        </button>
+        <button
+          onClick={() => setActiveTab("historique")}
+          className={`px-4 py-2 rounded ${
+            activeTab === "historique"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          📄 Historique
+        </button>
+        <button
+          onClick={() => setActiveTab("agents")}
+          className={`px-4 py-2 rounded ${
+            activeTab === "agents" ? "bg-purple-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          👥 Agents
+        </button>
       </div>
 
       {ficheActiveId && (
         <div className="border border-gray-300 rounded p-4 mb-4">
-          <FicheClient contactId={ficheActiveId} userRole="admin" userName="ADMIN" />
-          <button onClick={() => setFicheActiveId(null)} className="mt-2 text-sm text-red-600">❌ Fermer la fiche</button>
+          <FicheClient
+            contactId={ficheActiveId}
+            userRole="admin"
+            userName="ADMIN"
+          />
+          <button
+            onClick={() => setFicheActiveId(null)}
+            className="mt-2 text-sm text-red-600"
+          >
+            ❌ Fermer la fiche
+          </button>
         </div>
       )}
 
       {activeTab === "stats" && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">📊 Statistiques par agent</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            📊 Statistiques par agent
+          </h2>
           <div className="overflow-auto">
             <table className="w-full table-auto border-collapse text-sm">
               <thead>
@@ -138,7 +194,9 @@ export default function DashboardAdmin() {
             </table>
           </div>
 
-          <h2 className="text-xl font-semibold mt-8 mb-2">📝 Fiches à valider</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-2">
+            📝 Fiches à valider
+          </h2>
           <table className="w-full table-auto border-collapse text-sm">
             <thead className="bg-gray-100">
               <tr>
@@ -153,7 +211,12 @@ export default function DashboardAdmin() {
                   <td className="border px-3 py-2">{c.nom}</td>
                   <td className="border px-3 py-2">{c.telephone}</td>
                   <td className="border px-3 py-2">
-                    <button onClick={() => setFicheActiveId(c.id)} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">📝 Consulter</button>
+                    <button
+                      onClick={() => setFicheActiveId(c.id)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                    >
+                      📝 Consulter
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -164,10 +227,14 @@ export default function DashboardAdmin() {
 
       {activeTab === "historique" && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">📄 Historique des appels</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            📄 Historique des appels
+          </h2>
           <ul className="list-disc pl-5 space-y-1 text-sm">
             {appelHistory.map((a) => (
-              <li key={a.id}>{a.date} — {a.commentaire}</li>
+              <li key={a.id}>
+                {a.date} — {a.commentaire}
+              </li>
             ))}
           </ul>
         </div>
@@ -176,7 +243,10 @@ export default function DashboardAdmin() {
       {activeTab === "agents" && (
         <div>
           <h2 className="text-xl font-semibold mb-4">👥 Gestion des agents</h2>
-          <p className="text-gray-500">La création des comptes agents se fait désormais manuellement depuis Supabase.</p>
+          <p className="text-gray-500">
+            La création des comptes agents se fait désormais manuellement depuis
+            Supabase.
+          </p>
           <table className="w-full table-auto border-collapse text-sm mt-4">
             <thead className="bg-gray-100">
               <tr>
@@ -191,7 +261,12 @@ export default function DashboardAdmin() {
                   <td className="border px-3 py-2">{a.name}</td>
                   <td className="border px-3 py-2">{a.email}</td>
                   <td className="border px-3 py-2">
-                    <button onClick={() => supprimerAgent(a.id)} className="bg-red-600 text-white px-3 py-1 rounded text-sm">🗑️ Supprimer</button>
+                    <button
+                      onClick={() => supprimerAgent(a.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                    >
+                      🗑️ Supprimer
+                    </button>
                   </td>
                 </tr>
               ))}
